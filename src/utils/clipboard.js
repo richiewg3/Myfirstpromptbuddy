@@ -1,24 +1,8 @@
-export async function copyText(text) {
-  const value = String(text ?? '');
+export async function copyToClipboard(text) {
   try {
-    await navigator.clipboard.writeText(value);
-    return true;
+    await navigator.clipboard.writeText(text)
+    return true
   } catch {
-    // Fallback
-    const ta = document.createElement('textarea');
-    ta.value = value;
-    ta.style.position = 'fixed';
-    ta.style.left = '-9999px';
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-      document.execCommand('copy');
-      return true;
-    } catch {
-      return false;
-    } finally {
-      ta.remove();
-    }
+    return false
   }
 }
-
