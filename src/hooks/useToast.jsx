@@ -1,34 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState, useCallback } from 'react'
 
-export function useToast({ durationMs = 1500 } = {}) {
-  const [message, setMessage] = useState('');
-  const [visible, setVisible] = useState(false);
-  const timerRef = useRef(null);
+export function useToast() {
+  const [toast, setToast] = useState({ show: false, message: '' })
 
-  const toast = useCallback(
-    (msg) => {
-      setMessage(String(msg ?? ''));
-      setVisible(true);
-      if (timerRef.current) window.clearTimeout(timerRef.current);
-      timerRef.current = window.setTimeout(() => setVisible(false), durationMs);
-    },
-    [durationMs],
-  );
+  const showToast = useCallback((message) => {
+    setToast({ show: true, message })
+    setTimeout(() => {
+      setToast({ show: false, message: '' })
+    }, 2000)
+  }, [])
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) window.clearTimeout(timerRef.current);
-    };
-  }, []);
-
-  function Toast() {
-    return (
-      <div className={`toast ${visible ? 'show' : ''}`} role="status" aria-live="polite">
-        {message}
-      </div>
-    );
-  }
-
-  return { toast, Toast };
+  return { toast, showToast }
 }
-

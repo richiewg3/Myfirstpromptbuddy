@@ -1,60 +1,96 @@
-import { useEffect, useState } from 'react';
-import { BuilderPanel } from './components/BuilderPanel';
-import { DashboardPanel } from './components/DashboardPanel';
-import { Layout } from './components/Layout';
-import { SetupPanel } from './components/SetupPanel';
-import { usePawsvilleState } from './hooks/usePawsvilleState';
-import { usePromptHistory } from './hooks/usePromptHistory';
-import { useToast } from './hooks/useToast';
+import { useState, useCallback } from 'react'
+import { Header } from './components/Header'
+import { Dashboard } from './components/Dashboard'
+import { Frankensteiner } from './components/Frankensteiner'
+import { Refinery } from './components/Refinery'
+import { ApiModal } from './components/ApiModal'
+import { Toast } from './components/Toast'
+import { useToast } from './hooks/useToast'
+import { copyToClipboard } from './utils/clipboard'
+import { DEFAULT_API_CONFIG, STORAGE_KEY } from './constants/defaults'
 
-export default function App() {
-  const { toast, Toast } = useToast();
-  const { state, actions, migratedFromV4 } = usePawsvilleState();
-  const [view, setView] = useState('builder'); // 'builder' | 'dashboard'
-  const historyApi = usePromptHistory();
+function App() {
+  const [currentView, setCurrentView] = useState('dashboard')
+  const [showApiModal, setShowApiModal] = useState(false)
+  const [apiConfig, setApiConfig] = useState(() => {
+    // Load API config from localStorage on init
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        const data = JSON.parse(saved)
+        if (data.api) return data.api
+      }
+    } catch {
+      // ignore
+    }
+    return DEFAULT_API_CONFIG
+  })
 
-  useEffect(() => {
-    if (migratedFromV4) toast('Migrating v4 data...');
-  }, [migratedFromV4, toast]);
+  const { toast, showToast } = useToast()
+
+  const handleCopy = useCallback(async (text) => {
+    const success = await copyToClipboard(text)
+    showToast(success ? 'Copied to Clipboard!' : 'Failed to copy')
+  }, [showToast])
+
+  const handleSelectTool = useCallback((tool) => {
+    setCurrentView(tool)
+  }, [])
+
+  const handleDashboard = useCallback(() => {
+    setCurrentView('dashboard')
+  }, [])
+
+  const handleSaveApiConfig = useCallback((config) => {
+    setApiConfig(config)
+    // Also save to localStorage
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      const data = saved ? JSON.parse(saved) : {}
+      data.api = config
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    } catch {
+      // ignore
+    }
+    setShowApiModal(false)
+    showToast('API Settings Saved!')
+  }, [showToast])
 
   return (
     <>
-      <Layout
-        title="Pawsville Refinery v10"
-        subtitle={view === 'dashboard' ? 'Texture Engine • Dashboard' : 'Texture Engine • Builder'}
-        headerRight={
-          <div className="tabs" aria-label="View switcher">
-            <button type="button" className={`tab ${view === 'builder' ? 'active' : ''}`} onClick={() => setView('builder')}>
-              Builder
-            </button>
-            <button type="button" className={`tab ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>
-              Dashboard
-            </button>
-          </div>
-        }
-        left={<SetupPanel state={state} actions={actions} toast={toast} />}
-        right={
-          view === 'dashboard' ? (
-            <DashboardPanel
-              state={state}
-              history={historyApi.history}
-              onRemoveHistoryItem={historyApi.removeEntry}
-              onClearHistory={historyApi.clear}
-              onExportHistory={historyApi.exportJson}
-              toast={toast}
-            />
-          ) : (
-            <BuilderPanel
-              state={state}
-              toast={toast}
-              onGenerated={(items) => {
-                historyApi.addEntries(items);
-              }}
-            />
-          )
-        }
+      <Header
+        showNav={currentView !== 'dashboard'}
+        onDashboard={handleDashboard}
+        onApiModal={() => setShowApiModal(true)}
       />
-      <Toast />
+
+      {currentView === 'dashboard' && (
+        <Dashboard onSelectTool={handleSelectTool} />
+      )}
+
+      {currentView === 'frankensteiner' && (
+        <Frankensteiner onCopy={handleCopy} />
+      )}
+
+      {currentView === 'refinery' && (
+        <Refinery
+          apiConfig={apiConfig}
+          onCopy={handleCopy}
+          onShowToast={showToast}
+          onOpenApiModal={() => setShowApiModal(true)}
+        />
+      )}
+
+      <ApiModal
+        show={showApiModal}
+        apiConfig={apiConfig}
+        onSave={handleSaveApiConfig}
+        onClose={() => setShowApiModal(false)}
+      />
+
+      <Toast show={toast.show} message={toast.message} />
     </>
-  );
+  )
 }
+
+export default App
