@@ -1,24 +1,13 @@
-export function Layout({ left, right }) {
+export function Layout({ left, right, headerRight, title = 'Pawsville Refinery', subtitle = 'Texture Engine • Dashboard' }) {
   return (
     <>
       <header>
         <div className="wrap">
           <div>
-            <h1>Pawsville Frankensteiner v5</h1>
-            <div className="sub">Custom Ordering. Dynamic Chars. Batch Cards.</div>
+            <h1>{title}</h1>
+            <div className="sub">{subtitle}</div>
           </div>
-          <div
-            className="pill"
-            style={{
-              fontSize: 12,
-              color: 'var(--accent2)',
-              border: '1px solid var(--border)',
-              padding: '4px 10px',
-              borderRadius: 12,
-            }}
-          >
-            Ready
-          </div>
+          <div>{headerRight}</div>
         </div>
       </header>
 

@@ -26,6 +26,7 @@ export function getDefaultState() {
       style: '',
       camera: '',
       light: '',
+      texture: 'standard',
       rules: '',
     },
     characters: deepClone(DEFAULT_CHARS),

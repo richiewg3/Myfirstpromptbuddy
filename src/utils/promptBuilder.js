@@ -7,9 +7,25 @@ export function buildPrompt({ sceneBody, globals, characters, promptOrder }) {
       const t = (val ?? '').trim();
       if (t) p.push(`${label}: ${t}`);
     };
+    const addTexture = () => {
+      const lvl = String(globals?.texture ?? '').trim();
+      if (!lvl || lvl === 'standard') return;
+      if (lvl === 'high') {
+        p.push(
+          'TEXTURE: High fidelity micro-details; intricate surface detail; finely detailed fur/fabric/surfaces; tactile realism; 8k detail keywords where appropriate.',
+        );
+        return;
+      }
+      if (lvl === 'extreme') {
+        p.push(
+          "TEXTURE: EXTREME micro-texture. Describe surface weave (denim/cotton), pores, individual fur strands, scratches on metal, wood grain, subtle sheen/roughness; include tactile material cues (subsurface scattering, micro-contrast, fiber detail).",
+        );
+      }
+    };
     add(globals?.style, 'STYLE');
     add(globals?.camera, 'CAMERA');
     add(globals?.light, 'LIGHTING');
+    addTexture();
     add(globals?.rules, 'NEGATIVE');
     return p.join('\n\n');
   };

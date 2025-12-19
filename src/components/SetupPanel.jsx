@@ -69,10 +69,18 @@ export function SetupPanel({ state, actions, toast }) {
           headLeft={
             <>
               <span className="label">GLOBAL SETTINGS</span>
-              <span style={{ fontSize: 11, color: 'var(--muted)' }}>(Style, Light, Rules)</span>
+              <span style={{ fontSize: 11, color: 'var(--muted)' }}>(Style, Light, Texture, Rules)</span>
             </>
           }
         >
+          <div className="global-input-group">
+            <label>Texture Intensity (Micro-Details)</label>
+            <select value={state.globals.texture} onChange={(e) => actions.setGlobal('texture', e.target.value)}>
+              <option value="standard">Standard (Balanced)</option>
+              <option value="high">High (Intricate Surface Details)</option>
+              <option value="extreme">Extreme (Macro / Hyper-Realistic)</option>
+            </select>
+          </div>
           <div className="global-input-group">
             <label>Style / Aesthetic</label>
             <textarea value={state.globals.style} placeholder="Pixar style, 3D render..." onChange={(e) => actions.setGlobal('style', e.target.value)} />
