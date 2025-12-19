@@ -3,7 +3,7 @@ import { buildPrompt } from '../utils/promptBuilder';
 import { copyText } from '../utils/clipboard';
 import { ResultCard } from './ResultCard';
 
-export function BuilderPanel({ state, toast }) {
+export function BuilderPanel({ state, toast, onGenerated }) {
   const [tab, setTab] = useState('batch'); // 'batch' | 'single'
 
   const [batchBodies, setBatchBodies] = useState('');
@@ -49,11 +49,37 @@ export function BuilderPanel({ state, toast }) {
 
     setBatchResults(next);
     toast(`Generated ${lines.length} prompts`);
+
+    const ts = Date.now();
+    if (typeof onGenerated === 'function') {
+      onGenerated(
+        next.map((r) => ({
+          id: `h${ts}${Math.random().toString(16).slice(2)}`,
+          ts,
+          mode: 'batch',
+          scene: r.scene,
+          prompt: r.prompt,
+        })),
+      );
+    }
   }
 
   function generateSingle() {
     const res = buildPrompt({ sceneBody: singleBody, ...promptCtx });
     setSingleOutput(res);
+
+    const ts = Date.now();
+    if (typeof onGenerated === 'function' && (singleBody.trim() || res.trim())) {
+      onGenerated([
+        {
+          id: `h${ts}${Math.random().toString(16).slice(2)}`,
+          ts,
+          mode: 'single',
+          scene: singleBody.trim(),
+          prompt: res,
+        },
+      ]);
+    }
   }
 
   return (
