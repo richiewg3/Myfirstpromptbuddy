@@ -1,7 +1,6 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { ResultItem } from './ResultItem'
-import { Accordion } from './Accordion'
-import { REFINERY_DEFAULTS, STORAGE_KEY } from '../constants/defaults'
+import { REFINERY_DEFAULTS, STORAGE_KEY, DEFAULT_COLLAPSED_SECTIONS } from '../constants/defaults'
 import { callTextAI, callVisionAI } from '../utils/api'
 
 // Helper function to load initial state from localStorage
@@ -14,7 +13,9 @@ function loadInitialState() {
         chars: data.chars || JSON.parse(JSON.stringify(REFINERY_DEFAULTS)),
         style: data.style || '',
         negative: data.neg || '',
-        texture: data.tex || 'standard'
+        texture: data.tex || 'standard',
+        globalSuffix: data.globalSuffix || '',
+        collapsedSections: data.collapsedSections || { ...DEFAULT_COLLAPSED_SECTIONS }
       }
     }
   } catch {
@@ -24,7 +25,9 @@ function loadInitialState() {
     chars: JSON.parse(JSON.stringify(REFINERY_DEFAULTS)),
     style: '',
     negative: '',
-    texture: 'standard'
+    texture: 'standard',
+    globalSuffix: '',
+    collapsedSections: { ...DEFAULT_COLLAPSED_SECTIONS }
   }
 }
 
@@ -37,6 +40,12 @@ export function Refinery({ apiConfig, onCopy, onShowToast, onOpenApiModal }) {
   const [sceneInput, setSceneInput] = useState('')
   const [results, setResults] = useState([])
   const [isProcessing, setIsProcessing] = useState(false)
+  
+  // Global suffix state
+  const [globalSuffix, setGlobalSuffix] = useState(initialState.globalSuffix)
+  
+  // Collapsible sections state
+  const [collapsedSections, setCollapsedSections] = useState(initialState.collapsedSections)
 
   // Vision state
   const [activeTab, setActiveTab] = useState('text')
@@ -47,6 +56,27 @@ export function Refinery({ apiConfig, onCopy, onShowToast, onOpenApiModal }) {
 
   const inputRef = useRef(null)
   const fileInputRef = useRef(null)
+  
+  // Toggle section collapse
+  const toggleSection = (sectionKey) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey]
+    }))
+  }
+  
+  // Auto-save collapsed sections when they change
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      const data = saved ? JSON.parse(saved) : {}
+      data.collapsedSections = collapsedSections
+      data.globalSuffix = globalSuffix
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    } catch {
+      // ignore
+    }
+  }, [collapsedSections, globalSuffix])
 
   // Save to localStorage
   const saveRefinery = useCallback(() => {
@@ -55,11 +85,13 @@ export function Refinery({ apiConfig, onCopy, onShowToast, onOpenApiModal }) {
       style,
       neg: negative,
       tex: texture,
-      api: apiConfig
+      api: apiConfig,
+      globalSuffix,
+      collapsedSections
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
     onShowToast('Saved!')
-  }, [chars, style, negative, texture, apiConfig, onShowToast])
+  }, [chars, style, negative, texture, apiConfig, globalSuffix, collapsedSections, onShowToast])
 
   const loadRefinery = useCallback(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -70,6 +102,8 @@ export function Refinery({ apiConfig, onCopy, onShowToast, onOpenApiModal }) {
         if (data.style) setStyle(data.style)
         if (data.neg) setNegative(data.neg)
         if (data.tex) setTexture(data.tex)
+        if (data.globalSuffix !== undefined) setGlobalSuffix(data.globalSuffix)
+        if (data.collapsedSections) setCollapsedSections(data.collapsedSections)
         onShowToast('Loaded!')
       } catch {
         onShowToast('Failed to load')
@@ -185,7 +219,11 @@ Instructions:
     const newResults = []
     for (const input of inputs) {
       try {
-        const result = await callTextAI(apiConfig, systemPrompt, input)
+        let result = await callTextAI(apiConfig, systemPrompt, input)
+        // Append global suffix at the very end (after AI processing)
+        if (globalSuffix.trim()) {
+          result = result.trim() + ' ' + globalSuffix.trim()
+        }
         newResults.push(result)
       } catch (error) {
         newResults.push(`Error: ${error.message}`)
@@ -254,101 +292,144 @@ Instructions:
             </div>
           </div>
           <div className="card-bd">
-            {/* Global Settings */}
-            <Accordion title="GLOBAL SETTINGS" defaultOpen>
-              <div className="input-group">
-                <label>Texture Engine</label>
-                <select value={texture} onChange={(e) => setTexture(e.target.value)}>
-                  <option value="standard">Standard</option>
-                  <option value="high">High Detail</option>
-                  <option value="extreme">Extreme (Macro)</option>
-                </select>
+            {/* Global Settings - Collapsible */}
+            <div className="collapsible-section">
+              <div 
+                className="section-header"
+                onClick={() => toggleSection('globalSettings')}
+              >
+                <span className={`section-arrow ${collapsedSections.globalSettings ? '' : 'open'}`}>▶</span>
+                <span className="section-label">GLOBAL SETTINGS</span>
               </div>
-              <div className="input-group">
-                <label>Style Guide</label>
-                <textarea
-                  value={style}
-                  onChange={(e) => setStyle(e.target.value)}
-                  placeholder="High fidelity, octane render..."
-                />
+              <div className={`section-content ${collapsedSections.globalSettings ? 'collapsed' : ''}`}>
+                <div className="input-group">
+                  <label>Texture Engine</label>
+                  <select value={texture} onChange={(e) => setTexture(e.target.value)}>
+                    <option value="standard">Standard</option>
+                    <option value="high">High Detail</option>
+                    <option value="extreme">Extreme (Macro)</option>
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label>Style Guide</label>
+                  <textarea
+                    value={style}
+                    onChange={(e) => setStyle(e.target.value)}
+                    placeholder="High fidelity, octane render..."
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Negative</label>
+                  <textarea
+                    value={negative}
+                    onChange={(e) => setNegative(e.target.value)}
+                    placeholder="--no text, logos..."
+                  />
+                </div>
               </div>
-              <div className="input-group">
-                <label>Negative</label>
-                <textarea
-                  value={negative}
-                  onChange={(e) => setNegative(e.target.value)}
-                  placeholder="--no text, logos..."
-                />
-              </div>
-            </Accordion>
-
-            <div className="hr" />
-            <div className="flex-split" style={{ marginBottom: '10px' }}>
-              <label style={{ margin: 0 }}>ACTORS & WARDROBES</label>
-              <button className="btn small primary" onClick={addChar}>+ Add</button>
             </div>
 
-            {/* Characters */}
-            {chars.map((char) => (
-              <div key={char.id} className={`accordion ${char.open ? 'open' : ''}`}>
-                <div
-                  className="acc-head"
-                  onClick={() => updateChar(char.id, 'open', !char.open)}
+            <div className="hr" />
+            
+            {/* Actors & Wardrobes - Collapsible */}
+            <div className="collapsible-section">
+              <div 
+                className="section-header"
+                onClick={() => toggleSection('characters')}
+              >
+                <span className={`section-arrow ${collapsedSections.characters ? '' : 'open'}`}>▶</span>
+                <span className="section-label">ACTORS & WARDROBES</span>
+                <button 
+                  className="btn small primary" 
+                  onClick={(e) => { e.stopPropagation(); addChar(); }}
+                  style={{ marginLeft: 'auto' }}
                 >
-                  <div>
-                    <span style={{ color: 'var(--accent)' }}>{char.tag}</span> {char.name}
-                  </div>
-                  <button
-                    className="btn small danger"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      deleteChar(char.id)
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
-                <div className="acc-body">
-                  <div className="input-group">
-                    <label>Tag</label>
-                    <input
-                      type="text"
-                      value={char.tag}
-                      onChange={(e) => updateChar(char.id, 'tag', e.target.value)}
-                    />
-                  </div>
-                  <div className="input-group">
-                    <label>Description</label>
-                    <textarea
-                      value={char.desc}
-                      onChange={(e) => updateChar(char.id, 'desc', e.target.value)}
-                    />
-                  </div>
-                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '6px' }}>
-                    <label style={{ color: 'var(--accent2)' }}>WARDROBE</label>
-                    <div className="flex-row">
-                      <select
-                        style={{ flex: 1 }}
-                        value={char.activeOutfit}
-                        onChange={(e) => updateChar(char.id, 'activeOutfit', parseInt(e.target.value))}
-                      >
-                        {char.outfits.map((outfit, i) => (
-                          <option key={i} value={i}>{outfit.name}</option>
-                        ))}
-                      </select>
-                      <button className="btn small" onClick={() => addOutfit(char.id)}>+</button>
-                      <button className="btn small danger" onClick={() => deleteOutfit(char.id)}>-</button>
-                    </div>
-                    <textarea
-                      style={{ marginTop: '5px' }}
-                      placeholder="Outfit details..."
-                      value={char.outfits[char.activeOutfit]?.desc || ''}
-                      onChange={(e) => updateOutfitDesc(char.id, e.target.value)}
-                    />
-                  </div>
-                </div>
+                  + Add
+                </button>
               </div>
-            ))}
+              <div className={`section-content ${collapsedSections.characters ? 'collapsed' : ''}`}>
+                {/* Characters */}
+                {chars.map((char) => (
+                  <div key={char.id} className={`accordion ${char.open ? 'open' : ''}`}>
+                    <div
+                      className="acc-head"
+                      onClick={() => updateChar(char.id, 'open', !char.open)}
+                    >
+                      <div>
+                        <span style={{ color: 'var(--accent)' }}>{char.tag}</span> {char.name}
+                      </div>
+                      <button
+                        className="btn small danger"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          deleteChar(char.id)
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <div className="acc-body">
+                      <div className="input-group">
+                        <label>Tag</label>
+                        <input
+                          type="text"
+                          value={char.tag}
+                          onChange={(e) => updateChar(char.id, 'tag', e.target.value)}
+                        />
+                      </div>
+                      <div className="input-group">
+                        <label>Description</label>
+                        <textarea
+                          value={char.desc}
+                          onChange={(e) => updateChar(char.id, 'desc', e.target.value)}
+                        />
+                      </div>
+                      <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '6px' }}>
+                        <label style={{ color: 'var(--accent2)' }}>WARDROBE</label>
+                        <div className="flex-row">
+                          <select
+                            style={{ flex: 1 }}
+                            value={char.activeOutfit}
+                            onChange={(e) => updateChar(char.id, 'activeOutfit', parseInt(e.target.value))}
+                          >
+                            {char.outfits.map((outfit, i) => (
+                              <option key={i} value={i}>{outfit.name}</option>
+                            ))}
+                          </select>
+                          <button className="btn small" onClick={() => addOutfit(char.id)}>+</button>
+                          <button className="btn small danger" onClick={() => deleteOutfit(char.id)}>-</button>
+                        </div>
+                        <textarea
+                          style={{ marginTop: '5px' }}
+                          placeholder="Outfit details..."
+                          value={char.outfits[char.activeOutfit]?.desc || ''}
+                          onChange={(e) => updateOutfitDesc(char.id, e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="hr" />
+            
+            {/* Global Suffix Section */}
+            <div className="input-group">
+              <label>
+                <span className="suffix-icon">⚙️</span> Suffix / Parameters
+              </label>
+              <input
+                type="text"
+                value={globalSuffix}
+                onChange={(e) => setGlobalSuffix(e.target.value)}
+                placeholder="--ar 16:9 --v 6.1 --style raw"
+                className="suffix-input"
+              />
+              <p className="helper-text">
+                Appended to every generated prompt after AI enhancement.
+              </p>
+            </div>
           </div>
         </section>
 
