@@ -4,7 +4,8 @@ import {
   FRANKENSTEINER_DEFAULTS, 
   FRANKENSTEINER_STORAGE_KEY,
   DEFAULT_BLOCK_ORDER,
-  DEFAULT_COLLAPSED_SECTIONS 
+  DEFAULT_COLLAPSED_SECTIONS,
+  LIGHTING_PRESETS_DEFAULTS
 } from '../constants/defaults'
 
 // Helper to load state from localStorage
@@ -25,7 +26,9 @@ export function Frankensteiner({ onCopy }) {
   
   const [style, setStyle] = useState(savedState?.style || '')
   const [camera, setCamera] = useState(savedState?.camera || '')
-  const [lighting, setLighting] = useState(savedState?.lighting || '')
+  const [lightingPresets, setLightingPresets] = useState(() => 
+    savedState?.lightingPresets || JSON.parse(JSON.stringify(LIGHTING_PRESETS_DEFAULTS))
+  )
   const [negativePrompt, setNegativePrompt] = useState(savedState?.negativePrompt || '')
   const [chars, setChars] = useState(() => 
     savedState?.chars || JSON.parse(JSON.stringify(FRANKENSTEINER_DEFAULTS))
@@ -54,7 +57,7 @@ export function Frankensteiner({ onCopy }) {
     const data = {
       style,
       camera,
-      lighting,
+      lightingPresets,
       negativePrompt,
       chars,
       globalSuffix,
@@ -62,7 +65,7 @@ export function Frankensteiner({ onCopy }) {
       collapsedSections
     }
     localStorage.setItem(FRANKENSTEINER_STORAGE_KEY, JSON.stringify(data))
-  }, [style, camera, lighting, negativePrompt, chars, globalSuffix, blockOrder, collapsedSections])
+  }, [style, camera, lightingPresets, negativePrompt, chars, globalSuffix, blockOrder, collapsedSections])
 
   // Auto-save on state changes
   useEffect(() => {
@@ -97,6 +100,27 @@ export function Frankensteiner({ onCopy }) {
 
   const toggleCharActive = (id) => {
     setChars(chars.map(c => c.id === id ? { ...c, active: !c.active } : c))
+  }
+
+  // Lighting preset management functions
+  const addLightingPreset = () => {
+    setLightingPresets([...lightingPresets, {
+      id: 'lp' + Date.now(),
+      text: '',
+      active: true
+    }])
+  }
+
+  const deleteLightingPreset = (id) => {
+    setLightingPresets(lightingPresets.filter(p => p.id !== id))
+  }
+
+  const updateLightingPreset = (id, text) => {
+    setLightingPresets(lightingPresets.map(p => p.id === id ? { ...p, text } : p))
+  }
+
+  const toggleLightingPreset = (id) => {
+    setLightingPresets(lightingPresets.map(p => p.id === id ? { ...p, active: !p.active } : p))
   }
 
   // Drag and drop handlers for block ordering
@@ -154,9 +178,15 @@ export function Frankensteiner({ onCopy }) {
           case 'camera':
             if (camera.trim()) parts.push('CAMERA: ' + camera.trim())
             break
-          case 'lighting':
-            if (lighting.trim()) parts.push('LIGHTING: ' + lighting.trim())
+          case 'lighting': {
+            const activeLighting = lightingPresets
+              .filter(p => p.active && p.text.trim())
+              .map(p => p.text.trim())
+            if (activeLighting.length > 0) {
+              parts.push('LIGHTING: ' + activeLighting.join(', '))
+            }
             break
+          }
           case 'characters':
             if (activeCharBlocks.length > 0) {
               // Label each character block individually
@@ -239,11 +269,38 @@ export function Frankensteiner({ onCopy }) {
                 </div>
                 <div className="input-group">
                   <label>Lighting / Atmosphere</label>
-                  <textarea
-                    value={lighting}
-                    onChange={(e) => setLighting(e.target.value)}
-                    placeholder="Golden hour sunlight, moody shadows, soft ambient glow..."
-                  />
+                  <div className="lighting-list">
+                    {lightingPresets.map((preset) => (
+                      <div key={preset.id} className="lighting-item">
+                        <input
+                          type="checkbox"
+                          checked={preset.active}
+                          onChange={() => toggleLightingPreset(preset.id)}
+                        />
+                        <input
+                          type="text"
+                          className="lighting-text"
+                          value={preset.text}
+                          onChange={(e) => updateLightingPreset(preset.id, e.target.value)}
+                          placeholder="Enter lighting preset..."
+                        />
+                        <button
+                          className="btn small danger"
+                          onClick={() => deleteLightingPreset(preset.id)}
+                          title="Delete preset"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      className="btn small primary"
+                      style={{ marginTop: '8px' }}
+                      onClick={addLightingPreset}
+                    >
+                      + Add Preset
+                    </button>
+                  </div>
                 </div>
                 <div className="input-group">
                   <label>Negative Prompt</label>
