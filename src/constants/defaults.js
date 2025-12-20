@@ -21,6 +21,25 @@ export const FRANKENSTEINER_DEFAULTS = [
   }
 ]
 
+// Default Data for Frankensteiner Lighting Presets
+export const LIGHTING_PRESETS_DEFAULTS = [
+  {
+    id: 'lp1',
+    text: 'Golden hour sunlight',
+    active: true
+  },
+  {
+    id: 'lp2',
+    text: 'Soft ambient glow',
+    active: false
+  },
+  {
+    id: 'lp3',
+    text: 'Moody shadows',
+    active: false
+  }
+]
+
 // Default API configuration
 export const DEFAULT_API_CONFIG = {
   provider: 'gemini',
