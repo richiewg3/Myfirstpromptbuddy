@@ -138,28 +138,33 @@ export function Frankensteiner({ onCopy }) {
   }
 
   const buildPrompts = () => {
-    const activeChars = chars.filter(c => c.active && c.text.trim())
-      .map(c => c.text.trim())
-      .join('\n\n')
+    // Build labeled character blocks
+    const activeCharBlocks = chars.filter(c => c.active && c.text.trim())
     const scenes = sceneInput.split('\n').filter(x => x.trim())
 
     const newResults = scenes.map((scene) => {
-      // Build prompt parts according to user-defined order
+      // Build prompt parts according to user-defined order with labels
       const parts = []
       
       for (const block of blockOrder) {
         switch (block.id) {
           case 'style':
-            if (style.trim()) parts.push(style.trim())
+            if (style.trim()) parts.push('STYLE: ' + style.trim())
             break
           case 'camera':
-            if (camera.trim()) parts.push(camera.trim())
+            if (camera.trim()) parts.push('CAMERA: ' + camera.trim())
             break
           case 'lighting':
-            if (lighting.trim()) parts.push(lighting.trim())
+            if (lighting.trim()) parts.push('LIGHTING: ' + lighting.trim())
             break
           case 'characters':
-            if (activeChars) parts.push(activeChars)
+            if (activeCharBlocks.length > 0) {
+              // Label each character block individually
+              const charParts = activeCharBlocks.map(c => 
+                'CHARACTER: ' + c.text.trim()
+              )
+              parts.push(charParts.join('\n'))
+            }
             break
           case 'scene':
             parts.push('SCENE: ' + scene.trim())
@@ -170,14 +175,14 @@ export function Frankensteiner({ onCopy }) {
       // Join all parts
       let prompt = parts.filter(x => x).join('\n\n')
       
-      // Append global suffix at the very end
-      if (globalSuffix.trim()) {
-        prompt += ' ' + globalSuffix.trim()
+      // Append negative prompt with label
+      if (negativePrompt.trim()) {
+        prompt += '\n\nNEGATIVE: ' + negativePrompt.trim()
       }
       
-      // Append negative prompt at the very end
-      if (negativePrompt.trim()) {
-        prompt += ' --no ' + negativePrompt.trim()
+      // Append global suffix at the very end (parameters don't need label)
+      if (globalSuffix.trim()) {
+        prompt += ' ' + globalSuffix.trim()
       }
       
       return prompt
