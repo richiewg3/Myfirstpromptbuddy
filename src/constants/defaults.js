@@ -31,6 +31,7 @@ export const DEFAULT_API_CONFIG = {
 export const DEFAULT_BLOCK_ORDER = [
   { id: 'style', label: 'Style Block' },
   { id: 'camera', label: 'Camera Block' },
+  { id: 'lighting', label: 'Lighting / Atmosphere' },
   { id: 'characters', label: 'Character Blocks' },
   { id: 'scene', label: 'Scene Description' }
 ]

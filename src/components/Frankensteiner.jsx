@@ -25,6 +25,8 @@ export function Frankensteiner({ onCopy }) {
   
   const [style, setStyle] = useState(savedState?.style || '')
   const [camera, setCamera] = useState(savedState?.camera || '')
+  const [lighting, setLighting] = useState(savedState?.lighting || '')
+  const [negativePrompt, setNegativePrompt] = useState(savedState?.negativePrompt || '')
   const [chars, setChars] = useState(() => 
     savedState?.chars || JSON.parse(JSON.stringify(FRANKENSTEINER_DEFAULTS))
   )
@@ -52,13 +54,15 @@ export function Frankensteiner({ onCopy }) {
     const data = {
       style,
       camera,
+      lighting,
+      negativePrompt,
       chars,
       globalSuffix,
       blockOrder,
       collapsedSections
     }
     localStorage.setItem(FRANKENSTEINER_STORAGE_KEY, JSON.stringify(data))
-  }, [style, camera, chars, globalSuffix, blockOrder, collapsedSections])
+  }, [style, camera, lighting, negativePrompt, chars, globalSuffix, blockOrder, collapsedSections])
 
   // Auto-save on state changes
   useEffect(() => {
@@ -151,6 +155,9 @@ export function Frankensteiner({ onCopy }) {
           case 'camera':
             if (camera.trim()) parts.push(camera.trim())
             break
+          case 'lighting':
+            if (lighting.trim()) parts.push(lighting.trim())
+            break
           case 'characters':
             if (activeChars) parts.push(activeChars)
             break
@@ -166,6 +173,11 @@ export function Frankensteiner({ onCopy }) {
       // Append global suffix at the very end
       if (globalSuffix.trim()) {
         prompt += ' ' + globalSuffix.trim()
+      }
+      
+      // Append negative prompt at the very end
+      if (negativePrompt.trim()) {
+        prompt += ' --no ' + negativePrompt.trim()
       }
       
       return prompt
@@ -218,6 +230,22 @@ export function Frankensteiner({ onCopy }) {
                     value={camera}
                     onChange={(e) => setCamera(e.target.value)}
                     placeholder="Wide angle, 35mm..."
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Lighting / Atmosphere</label>
+                  <textarea
+                    value={lighting}
+                    onChange={(e) => setLighting(e.target.value)}
+                    placeholder="Golden hour sunlight, moody shadows, soft ambient glow..."
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Negative Prompt</label>
+                  <textarea
+                    value={negativePrompt}
+                    onChange={(e) => setNegativePrompt(e.target.value)}
+                    placeholder="blurry, low quality, text, watermark..."
                   />
                 </div>
               </div>
