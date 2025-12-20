@@ -27,5 +27,22 @@ export const DEFAULT_API_CONFIG = {
   key: ''
 }
 
+// Default block order for Frankensteiner prompt assembly
+export const DEFAULT_BLOCK_ORDER = [
+  { id: 'style', label: 'Style Block' },
+  { id: 'camera', label: 'Camera Block' },
+  { id: 'characters', label: 'Character Blocks' },
+  { id: 'scene', label: 'Scene Description' }
+]
+
+// Default collapsed states for sections
+export const DEFAULT_COLLAPSED_SECTIONS = {
+  configuration: false,
+  globalSettings: false,
+  characters: false,
+  promptBuilder: false
+}
+
 // Storage key for localStorage
 export const STORAGE_KEY = 'pawsville_refinery_v12'
+export const FRANKENSTEINER_STORAGE_KEY = 'pawsville_frankensteiner_v1'
