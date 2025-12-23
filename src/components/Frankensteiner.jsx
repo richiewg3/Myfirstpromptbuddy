@@ -5,6 +5,8 @@ import {
   FRANKENSTEINER_STORAGE_KEY,
   DEFAULT_BLOCK_ORDER,
   DEFAULT_COLLAPSED_SECTIONS,
+  STYLE_PRESETS_DEFAULTS,
+  CAMERA_PRESETS_DEFAULTS,
   LIGHTING_PRESETS_DEFAULTS
 } from '../constants/defaults'
 
@@ -24,8 +26,12 @@ function loadSavedState() {
 export function Frankensteiner({ onCopy }) {
   const savedState = loadSavedState()
   
-  const [style, setStyle] = useState(savedState?.style || '')
-  const [camera, setCamera] = useState(savedState?.camera || '')
+  const [stylePresets, setStylePresets] = useState(() => 
+    savedState?.stylePresets || JSON.parse(JSON.stringify(STYLE_PRESETS_DEFAULTS))
+  )
+  const [cameraPresets, setCameraPresets] = useState(() => 
+    savedState?.cameraPresets || JSON.parse(JSON.stringify(CAMERA_PRESETS_DEFAULTS))
+  )
   const [lightingPresets, setLightingPresets] = useState(() => 
     savedState?.lightingPresets || JSON.parse(JSON.stringify(LIGHTING_PRESETS_DEFAULTS))
   )
@@ -55,8 +61,8 @@ export function Frankensteiner({ onCopy }) {
   // Save to localStorage whenever relevant state changes
   const saveState = useCallback(() => {
     const data = {
-      style,
-      camera,
+      stylePresets,
+      cameraPresets,
       lightingPresets,
       negativePrompt,
       chars,
@@ -65,7 +71,7 @@ export function Frankensteiner({ onCopy }) {
       collapsedSections
     }
     localStorage.setItem(FRANKENSTEINER_STORAGE_KEY, JSON.stringify(data))
-  }, [style, camera, lightingPresets, negativePrompt, chars, globalSuffix, blockOrder, collapsedSections])
+  }, [stylePresets, cameraPresets, lightingPresets, negativePrompt, chars, globalSuffix, blockOrder, collapsedSections])
 
   // Auto-save on state changes
   useEffect(() => {
@@ -100,6 +106,48 @@ export function Frankensteiner({ onCopy }) {
 
   const toggleCharActive = (id) => {
     setChars(chars.map(c => c.id === id ? { ...c, active: !c.active } : c))
+  }
+
+  // Style preset management functions
+  const addStylePreset = () => {
+    setStylePresets([...stylePresets, {
+      id: 'sp' + Date.now(),
+      text: '',
+      active: true
+    }])
+  }
+
+  const deleteStylePreset = (id) => {
+    setStylePresets(stylePresets.filter(p => p.id !== id))
+  }
+
+  const updateStylePreset = (id, text) => {
+    setStylePresets(stylePresets.map(p => p.id === id ? { ...p, text } : p))
+  }
+
+  const toggleStylePreset = (id) => {
+    setStylePresets(stylePresets.map(p => p.id === id ? { ...p, active: !p.active } : p))
+  }
+
+  // Camera preset management functions
+  const addCameraPreset = () => {
+    setCameraPresets([...cameraPresets, {
+      id: 'cp' + Date.now(),
+      text: '',
+      active: true
+    }])
+  }
+
+  const deleteCameraPreset = (id) => {
+    setCameraPresets(cameraPresets.filter(p => p.id !== id))
+  }
+
+  const updateCameraPreset = (id, text) => {
+    setCameraPresets(cameraPresets.map(p => p.id === id ? { ...p, text } : p))
+  }
+
+  const toggleCameraPreset = (id) => {
+    setCameraPresets(cameraPresets.map(p => p.id === id ? { ...p, active: !p.active } : p))
   }
 
   // Lighting preset management functions
@@ -172,12 +220,24 @@ export function Frankensteiner({ onCopy }) {
       
       for (const block of blockOrder) {
         switch (block.id) {
-          case 'style':
-            if (style.trim()) parts.push('STYLE: ' + style.trim())
+          case 'style': {
+            const activeStyles = stylePresets
+              .filter(p => p.active && p.text.trim())
+              .map(p => p.text.trim())
+            if (activeStyles.length > 0) {
+              parts.push('STYLE: ' + activeStyles.join(', '))
+            }
             break
-          case 'camera':
-            if (camera.trim()) parts.push('CAMERA: ' + camera.trim())
+          }
+          case 'camera': {
+            const activeCameras = cameraPresets
+              .filter(p => p.active && p.text.trim())
+              .map(p => p.text.trim())
+            if (activeCameras.length > 0) {
+              parts.push('CAMERA: ' + activeCameras.join(', '))
+            }
             break
+          }
           case 'lighting': {
             const activeLighting = lightingPresets
               .filter(p => p.active && p.text.trim())
@@ -253,25 +313,79 @@ export function Frankensteiner({ onCopy }) {
               <div className={`section-content ${collapsedSections.globalSettings ? 'collapsed' : ''}`}>
                 <div className="input-group">
                   <label>Style Block</label>
-                  <textarea
-                    value={style}
-                    onChange={(e) => setStyle(e.target.value)}
-                    placeholder="Pixar style, 3D render..."
-                  />
+                  <div className="preset-list">
+                    {stylePresets.map((preset) => (
+                      <div key={preset.id} className="preset-item">
+                        <input
+                          type="checkbox"
+                          checked={preset.active}
+                          onChange={() => toggleStylePreset(preset.id)}
+                        />
+                        <input
+                          type="text"
+                          className="preset-text"
+                          value={preset.text}
+                          onChange={(e) => updateStylePreset(preset.id, e.target.value)}
+                          placeholder="Enter style preset..."
+                        />
+                        <button
+                          className="btn small danger"
+                          onClick={() => deleteStylePreset(preset.id)}
+                          title="Delete preset"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      className="btn small primary"
+                      style={{ marginTop: '8px' }}
+                      onClick={addStylePreset}
+                    >
+                      + Add Preset
+                    </button>
+                  </div>
                 </div>
                 <div className="input-group">
                   <label>Camera Block</label>
-                  <textarea
-                    value={camera}
-                    onChange={(e) => setCamera(e.target.value)}
-                    placeholder="Wide angle, 35mm..."
-                  />
+                  <div className="preset-list">
+                    {cameraPresets.map((preset) => (
+                      <div key={preset.id} className="preset-item">
+                        <input
+                          type="checkbox"
+                          checked={preset.active}
+                          onChange={() => toggleCameraPreset(preset.id)}
+                        />
+                        <input
+                          type="text"
+                          className="preset-text"
+                          value={preset.text}
+                          onChange={(e) => updateCameraPreset(preset.id, e.target.value)}
+                          placeholder="Enter camera preset..."
+                        />
+                        <button
+                          className="btn small danger"
+                          onClick={() => deleteCameraPreset(preset.id)}
+                          title="Delete preset"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      className="btn small primary"
+                      style={{ marginTop: '8px' }}
+                      onClick={addCameraPreset}
+                    >
+                      + Add Preset
+                    </button>
+                  </div>
                 </div>
                 <div className="input-group">
                   <label>Lighting / Atmosphere</label>
-                  <div className="lighting-list">
+                  <div className="preset-list">
                     {lightingPresets.map((preset) => (
-                      <div key={preset.id} className="lighting-item">
+                      <div key={preset.id} className="preset-item">
                         <input
                           type="checkbox"
                           checked={preset.active}
@@ -279,7 +393,7 @@ export function Frankensteiner({ onCopy }) {
                         />
                         <input
                           type="text"
-                          className="lighting-text"
+                          className="preset-text"
                           value={preset.text}
                           onChange={(e) => updateLightingPreset(preset.id, e.target.value)}
                           placeholder="Enter lighting preset..."

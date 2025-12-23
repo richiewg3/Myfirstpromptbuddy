@@ -21,6 +21,44 @@ export const FRANKENSTEINER_DEFAULTS = [
   }
 ]
 
+// Default Data for Frankensteiner Style Presets
+export const STYLE_PRESETS_DEFAULTS = [
+  {
+    id: 'sp1',
+    text: 'Pixar style, 3D render',
+    active: true
+  },
+  {
+    id: 'sp2',
+    text: 'Anime style, Studio Ghibli',
+    active: false
+  },
+  {
+    id: 'sp3',
+    text: 'Photorealistic, hyperdetailed',
+    active: false
+  }
+]
+
+// Default Data for Frankensteiner Camera Presets
+export const CAMERA_PRESETS_DEFAULTS = [
+  {
+    id: 'cp1',
+    text: 'Wide angle, 35mm lens',
+    active: true
+  },
+  {
+    id: 'cp2',
+    text: 'Close-up portrait shot',
+    active: false
+  },
+  {
+    id: 'cp3',
+    text: 'Bird\'s eye view, aerial shot',
+    active: false
+  }
+]
+
 // Default Data for Frankensteiner Lighting Presets
 export const LIGHTING_PRESETS_DEFAULTS = [
   {

@@ -709,14 +709,14 @@ select:focus {
   line-height: 1.4;
 }
 
-/* --- LIGHTING LIST --- */
-.lighting-list {
+/* --- PRESET LIST (Generic for Style, Camera, Lighting) --- */
+.preset-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.lighting-item {
+.preset-item {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -727,18 +727,18 @@ select:focus {
   transition: all 0.2s;
 }
 
-.lighting-item:hover {
+.preset-item:hover {
   border-color: var(--accent);
 }
 
-.lighting-item input[type="checkbox"] {
+.preset-item input[type="checkbox"] {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
   cursor: pointer;
 }
 
-.lighting-item .lighting-text {
+.preset-item .preset-text {
   flex: 1;
   border: none;
   background: transparent;
@@ -746,17 +746,17 @@ select:focus {
   font-size: 13px;
 }
 
-.lighting-item .lighting-text:focus {
+.preset-item .preset-text:focus {
   outline: none;
   border: none;
 }
 
-.lighting-item .btn.danger {
+.preset-item .btn.danger {
   flex-shrink: 0;
   opacity: 0.6;
   transition: opacity 0.2s;
 }
 
-.lighting-item:hover .btn.danger {
+.preset-item:hover .btn.danger {
   opacity: 1;
 }
